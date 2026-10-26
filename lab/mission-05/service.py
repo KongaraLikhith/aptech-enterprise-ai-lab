@@ -9,7 +9,13 @@ for directory in [ROOT, ROOT / "lab" / "mission-04"]:
     if str(directory) not in sys.path:
         sys.path.insert(0, str(directory))
 
-from service import create_app  # inherited Mission 04 factory
+import importlib.util
+
+M04_FILE = ROOT / "lab" / "mission-04" / "service.py"
+spec = importlib.util.spec_from_file_location("mission04_inherited_service", M04_FILE)
+mission04 = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mission04)
+create_app = mission04.create_app  # inherited Mission 04 factory
 from retrieval import load_chunks, retrieve, build_grounded_prompt
 
 class RagRequest(BaseModel):
@@ -47,8 +53,7 @@ def create_rag_app(agent=None, chunks=None):
         try:
             agent_instance = app.state.agent
             if agent_instance is None:
-                from service import build_agent
-                agent_instance = build_agent()
+                agent_instance = mission04.build_agent()
                 app.state.agent = agent_instance
             session = app.state.router.get_or_create(
                 request.user_id, agent_instance.create_session
